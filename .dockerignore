@@ -1,0 +1,17 @@
+__pycache__
+.mypy_cache
+.venv
+.vscode
+models
+notebook
+study
+.dockerignore
+.env
+.git
+.gitignore
+.python-version
+docker-compose.yaml
+Dockerfile.api
+.gitattributes
+libraries.txt
+README.md

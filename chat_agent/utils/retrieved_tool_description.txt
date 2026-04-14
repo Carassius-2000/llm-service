@@ -1,0 +1,5 @@
+This tool retrieves relevant text chunks from a database of construction-related documents.
+Given a user query (e.g., a question about building codes, materials, safety standards, or construction practices), it performs a semantic search over the indexed documents and returns the most relevant passages. 
+The retrieved information can be used to answer domain‑specific questions, support decision‑making, or provide factual references about construction processes, regulations, and best practices.
+Input: query (string) – the user question or search phrase in natural language.
+Output: List of text chunks with optional metadata (e.g., source document, relevance score).
