@@ -21,9 +21,6 @@ from chat_agent.utils.structured_output import Response
 from chat_agent.utils.tools import get_retriever_tool, get_search_tool
 
 
-load_dotenv()
-
-
 class ReActAgent:
     """
     ReAct агент для взаимодействия с внешними инструментами и векторным хранилищем.
@@ -101,13 +98,13 @@ class ReActAgent:
             Идентификатор сессии диалога для изоляции памяти, по умолчанию document-session.
         """
         llm = ChatOpenAI(
-            base_url=os.getenv("LM_STUDIO_HOST"),
-            api_key=os.getenv("LM_STUDIO_KEY"),
+            base_url=os.getenv("API_HOST_DOCKER"),
+            api_key=os.getenv("API_KEY"),
             model=os.getenv("MODEL_NAME"),
         )
         embedding_function = OpenAIEmbeddings(
-            base_url=os.getenv("LM_STUDIO_HOST"),
-            api_key=os.getenv("LM_STUDIO_KEY"),
+            base_url=os.getenv("API_HOST_DOCKER"),
+            api_key=os.getenv("API_KEY"),
             model=os.getenv("EMBEDDING_NAME"),
             check_embedding_ctx_length=False,
         )

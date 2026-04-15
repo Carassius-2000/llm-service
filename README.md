@@ -30,17 +30,26 @@ LLM Service с агентным RAG. [Ссылка на dataset для БД](htt
 - Pydantic.
 
 ## Запуск сервиса
+1. Клонируйте репозиторый с GitHub.
 ```bash 
-git clone https://github.com/Carassius-2000/ml_service
+git clone https://github.com/Carassius-2000/llm-service
 ```
 2. Установите Docker.
 
-3. Соберите и запустите сервис.
+3. Создайте файл `.env` с настройками для доступа к серверу с LLM и Embedding Model. Структура файла должна быть такой:
+```bash
+API_HOST_DOCKER=YOUR_HOST
+API_KEY=YOUR_API_KEY
+MODEL_NAME=YOUR_MODEL_NAME
+EMBEDDING_NAME=YOUR_EMBEDDING_NAME
+```
+
+4. Соберите и запустите сервис.
 ```bash
 docker compose up --build
 ```
 
-4. Проверить работоспособность системы можно либо открыв в браузере [http://localhost:81/](http://localhost:81/), либо посмотрев состояние контейнеров. Должен быть запущен контейнер `api`.
+5. Проверить работоспособность системы можно либо открыв в браузере [http://localhost:81/](http://localhost:81/), либо посмотрев состояние контейнеров. Должен быть запущен контейнер `api`.
 ```bash
 docker compose ps -a
 ```
