@@ -1,9 +1,6 @@
-import sqlite3
 from contextlib import asynccontextmanager
 
-from openai import APIConnectionError
-import sqlite_vec
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, Depends, FastAPI
 from fastapi.openapi.docs import (
     get_redoc_html,
     get_swagger_ui_html,
@@ -14,40 +11,9 @@ from fastapi.staticfiles import StaticFiles
 
 from chat_agent.agent import ReActAgent
 from chat_agent.utils.structured_output import Response
-from logger import console_logger
-
-
-def get_sqlite_connection() -> sqlite3.Connection:
-    """
-    Создаёт и возвращает соединение с SQLiteVec.
-
-    Returns
-    -------
-    `sqlite3.Connection`
-        Активное соединение с SQLite, готовое к выполнению запросов.
-    """
-    connection = sqlite3.connect("my_vectors.db", check_same_thread=False)
-    connection.enable_load_extension(True)
-    sqlite_vec.load(connection)
-    connection.enable_load_extension(False)
-    return connection
-
-
-def get_db(request: Request) -> sqlite3.Connection:
-    """
-    Извлекает соединение с базой данных из состояния FastAPI приложения.
-
-    Parameters
-    ----------
-    request : `Request`
-        Объект HTTP-запроса FastAPI.
-
-    Returns
-    -------
-    `sqlite3.Connection`
-        Соединение с SQLite, сохранённое в состоянии приложения.
-    """
-    return request.app.state.db_connection
+from database import get_sqlite_connection
+from dependencies.agent import get_agent
+from logger import log_info
 
 
 @asynccontextmanager
@@ -137,44 +103,11 @@ async def custom_redoc() -> HTMLResponse:
     )
 
 
-def get_agent(connection: sqlite3.Connection = Depends(get_db)) -> ReActAgent:
-    """
-    Dependency-функция, возвращающая экземпляр ReActAgent с заданным соединением с БД.
-
-    Parameters
-    ----------
-    connection : `sqlite3.Connection, default=Depends(get_db)`
-        Соединение с SQLite, полученное через зависимость FastAPI.
-
-    Returns
-    -------
-    `ReActAgent`
-        Инициализированный агент для обработки запросов.
-
-    Raises
-    ------
-    HTTPException
-        - 404 Not Found: если отсутствуют необходимые файлы моделей (FileNotFoundError).
-        - 503 Service Unavailable: если не удалось подключиться к серверу нейросети (APIConnectionError).
-    """
-    try:
-        return ReActAgent(connection=connection)
-    except FileNotFoundError as e:
-        message_error = f"Отсутствуют файлы с моделями. {e}"
-        console_logger.error(message_error)
-        raise HTTPException(status_code=404, detail=message_error)
-    except APIConnectionError as e:
-        message_error = (
-            f"Не удалось подключиться к серверу нейросети. "
-            f"Проверьте доступность сервера и настройки подключения. Ошибка: {e}"
-        )
-        console_logger.error(message_error)
-        raise HTTPException(status_code=503, detail=message_error)
-
-
 @app.post("/chat_message")
 def get_answer(
-    user_prompt: str, react_agent: ReActAgent = Depends(get_agent)
+    user_prompt: str,
+    react_agent: ReActAgent = Depends(get_agent),
+    background_tasks: BackgroundTasks = None,
 ) -> Response:
     """
     Отправляет пользовательский запрос агенту и возвращает структурированный ответ.
@@ -183,7 +116,7 @@ def get_answer(
     ----------
     user_prompt : `str`
         Текст сообщения пользователя.
-        
+
     react_agent : `ReActAgent, default=Depends(get_agent)`
         Экземпляр агента, полученный через dependency injection.
 
@@ -193,12 +126,15 @@ def get_answer(
         Структурированный ответ агента (обычно содержит текст ответа и метаданные).
     """
     response = react_agent.invoke(user_prompt)
-    console_logger.info("Ответ от агента получен.")
+    background_tasks.add_task(log_info, "Ответ от агента получен.")
     return response
 
 
 @app.delete("/clear_history")
-def clear_history(react_agent: ReActAgent = Depends(get_agent)) -> dict[str, str]:
+def clear_history(
+    react_agent: ReActAgent = Depends(get_agent),
+    background_tasks: BackgroundTasks = None,
+) -> dict[str, str]:
     """
     Очищает историю текущего диалога агента.
 
@@ -214,12 +150,12 @@ def clear_history(react_agent: ReActAgent = Depends(get_agent)) -> dict[str, str
         подтверждающий успешную очистку истории.
     """
     react_agent.clear_history()
-    console_logger.info("История чата очищена.")
+    background_tasks.add_task(log_info, "История чата очищена.")
     return {"status": "history cleared"}
 
 
 @app.get("/")
-async def root() -> dict[str, str]:
+async def healthcheck() -> dict[str, str]:
     """
     Точка входа в API. Используется для проверки работоспособности сервера.
 

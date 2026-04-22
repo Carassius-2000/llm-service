@@ -14,3 +14,7 @@ console_logger.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(logging.Formatter("%(asctime)s - INFO: %(message)s"))
 console_logger.addHandler(console_handler)
+
+
+def log_info(message: str) -> None:
+    console_logger.info(message)
